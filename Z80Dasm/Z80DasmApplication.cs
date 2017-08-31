@@ -47,6 +47,8 @@ namespace Z80Dasm
                 WriteInfoMessage(
                     "Writing disassembled instructions to ~Cyan~{0}~R~",
                     args.OutputDisassemblyFile);
+
+                File.WriteAllText(args.OutputDisassemblyFile, dasm);
             }
             else
             {
