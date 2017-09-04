@@ -50,6 +50,11 @@ namespace Components.Z80
             _instruction = _decoder.Decode();
             _context.PC = (ushort)_stream.Position;
 
+            //if (_memory.Skip(0x3C00).Take(1024).Any(x => x != 0))
+            //{
+            //    Console.WriteLine("Video memory written");
+            //}
+
             string symbol;
 
             if (_symbols.TryGetValue(_instructionAddress, out symbol))
@@ -89,8 +94,7 @@ namespace Components.Z80
                 case Z80Opcode.LD_B_N: _context.B = (byte)_instruction.Immediate; break;
                 case Z80Opcode.LD_C_N: _context.C = (byte)_instruction.Immediate; break;
                 case Z80Opcode.LD_D_N: _context.D = (byte)_instruction.Immediate; break;
-
-                
+                                    
                 case Z80Opcode.LD_A_A:
                     _context.A = _context.A;
                     SetLoadAFlags();
@@ -181,100 +185,150 @@ namespace Components.Z80
 
                 case Z80Opcode.LD_A_Ptr_BC: _context.A = _memory[_context.BC]; break;
                 case Z80Opcode.LD_A_Ptr_DE: _context.A = _memory[_context.DE]; break;
+                
                 case Z80Opcode.LD_A_Ptr_HL: _context.A = _memory[_context.HL]; break;
+                case Z80Opcode.LD_B_Ptr_HL: _context.B = _memory[_context.HL]; break;
+                case Z80Opcode.LD_C_Ptr_HL: _context.C = _memory[_context.HL]; break;
+                case Z80Opcode.LD_D_Ptr_HL: _context.D = _memory[_context.HL]; break;
+                case Z80Opcode.LD_E_Ptr_HL: _context.E = _memory[_context.HL]; break;
+                case Z80Opcode.LD_A_Ptr_NN: _context.A = _memory[_instruction.Immediate]; break;
+
+                case Z80Opcode.LD_Ptr_HL_A: _memory[_context.HL] = _context.A; break;
+                case Z80Opcode.LD_Ptr_HL_B: _memory[_context.HL] = _context.B; break;
+                case Z80Opcode.LD_Ptr_HL_C: _memory[_context.HL] = _context.C; break;
+                case Z80Opcode.LD_Ptr_HL_D: _memory[_context.HL] = _context.D; break;
+                case Z80Opcode.LD_Ptr_HL_E: _memory[_context.HL] = _context.E; break;
+                case Z80Opcode.LD_Ptr_HL_H: _memory[_context.HL] = _context.H; break;
+                case Z80Opcode.LD_Ptr_HL_L: _memory[_context.HL] = _context.L; break;
+                case Z80Opcode.LD_Ptr_HL_N: _memory[_context.HL] = (byte)_instruction.Immediate; break;
+
+                case Z80Opcode.LD_Ptr_NN_A: _memory[_instruction.Immediate] = _context.A; break;
+                
+
+                // DEC
+                case Z80Opcode.DEC_A: _context.A = Dec8(_context.A); break;
+                case Z80Opcode.DEC_B: _context.B = Dec8(_context.B); break;
+                case Z80Opcode.DEC_C: _context.C = Dec8(_context.C); break;
+                case Z80Opcode.DEC_D: _context.D = Dec8(_context.D); break;
+                case Z80Opcode.DEC_E: _context.E = Dec8(_context.E); break;
+                case Z80Opcode.DEC_H: _context.H = Dec8(_context.H); break;
+                case Z80Opcode.DEC_L: _context.L = Dec8(_context.L); break;
+
+                // SUB
+                case Z80Opcode.SUB_N:
+                    _context.A = Sub8((byte)_instruction.Immediate);
+                    break;
 
                 // AND 
                 case Z80Opcode.AND_A:
                     _context.A &= _context.A;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.AND_B:
                     _context.A &= _context.B;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.AND_C:
                     _context.A &= _context.C;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.AND_D:
                     _context.A &= _context.D;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.AND_E:
                     _context.A &= _context.E;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.AND_H:
                     _context.A &= _context.H;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.AND_L:
                     _context.A &= _context.L;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
+                    break;
+
+                case Z80Opcode.AND_N:
+                    _context.A &= (byte)_instruction.Immediate;
+                    SetLogicalOperationFlags();
                     break;
 
                 // OR
-
                 case Z80Opcode.OR_A:
                     _context.A |= _context.A;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.OR_B:
                     _context.A |= _context.B;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.OR_C:
                     _context.A |= _context.C;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.OR_D:
                     _context.A |= _context.D;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.OR_E:
                     _context.A |= _context.E;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.OR_H:
                     _context.A |= _context.H;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.OR_L:
                     _context.A |= _context.L;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 case Z80Opcode.OR_N:
                     _context.A |= (byte)_instruction.Immediate;
-                    SetAndOrFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 // XOR
                 case Z80Opcode.XOR_A:
                     _context.A ^= (byte)_instruction.Immediate;
-                    SetXorFlags();
+                    SetLogicalOperationFlags();
                     break;
 
                 // CP
                 case Z80Opcode.CP_N:
-                    Compare8((byte)_instruction.Immediate);
+                    Sub8((byte)_instruction.Immediate);
                     break;
 
                 // JP
                 case Z80Opcode.JP_NN: SetPC(_instruction.Immediate); break;
                 case Z80Opcode.JP_Ptr_HL: SetPC(_context.HL); break;
+
+                case Z80Opcode.JP_Z_NN:
+                    if (_context.ZeroFlag)
+                    {
+                        SetPC(_instruction.Immediate);
+                    }
+                    break;
+
+                case Z80Opcode.JP_NZ_NN:
+                    if (!_context.ZeroFlag)
+                    {
+                        SetPC(_instruction.Immediate);
+                    }
+                    break;
 
                 case Z80Opcode.JP_C_NN:
                     if (_context.CarryFlag)
@@ -332,6 +386,22 @@ namespace Components.Z80
                 // RET
                 case Z80Opcode.RET:
                     SetPC(Pop16());
+                    break;
+
+                case Z80Opcode.RET_Z:
+                    if (_context.ZeroFlag)
+                    {
+                        SetPC(Pop16());
+                        break;
+                    }
+                    break;
+
+                case Z80Opcode.RET_NZ:
+                    if (!_context.ZeroFlag)
+                    {
+                        SetPC(Pop16());
+                        break;
+                    }
                     break;
                     
 
@@ -473,6 +543,34 @@ namespace Components.Z80
                     break;
                 #endregion
 
+                case Z80OpcodeDD.LD_Ptr_IX_Plus_N_A:
+                    _memory[_context.IX + _instruction.Immediate] = _context.A;
+                    break;
+
+                case Z80OpcodeDD.LD_Ptr_IX_Plus_N_B:
+                    _memory[_context.IX + _instruction.Immediate] = _context.B;
+                    break;
+
+                case Z80OpcodeDD.LD_Ptr_IX_Plus_N_C:
+                    _memory[_context.IX + _instruction.Immediate] = _context.C;
+                    break;
+
+                case Z80OpcodeDD.LD_Ptr_IX_Plus_N_D:
+                    _memory[_context.IX + _instruction.Immediate] = _context.D;
+                    break;
+
+                case Z80OpcodeDD.LD_Ptr_IX_Plus_N_E:
+                    _memory[_context.IX + _instruction.Immediate] = _context.E;
+                    break;
+
+                case Z80OpcodeDD.LD_Ptr_IX_Plus_N_H:
+                    _memory[_context.IX + _instruction.Immediate] = _context.H;
+                    break;
+
+                case Z80OpcodeDD.LD_Ptr_IX_Plus_N_L:
+                    _memory[_context.IX + _instruction.Immediate] = _context.L;
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -579,17 +677,7 @@ namespace Components.Z80
             _context.AddSubtractFlag = false;
         }
 
-        private void SetAndOrFlags()
-        {
-            _context.SignFlag = (_context.A & 0x80) != 0;
-            _context.ZeroFlag = _context.A == 0;
-            _context.HalfCarryFlag = false;
-            _context.ParityOverflowFlag = false;
-            _context.AddSubtractFlag = false;
-            _context.CarryFlag = false;
-        }
-
-        private void SetXorFlags()
+        private void SetLogicalOperationFlags()
         {
             _context.SignFlag = (_context.A & 0x80) != 0;
             _context.ZeroFlag = _context.A == 0;
@@ -599,15 +687,30 @@ namespace Components.Z80
             _context.CarryFlag = false;
         }
 
-        private void Compare8(byte value)
+        private byte Sub8(byte value)
         {
-            _context.ZeroFlag = _context.A == value;
-            var x = _context.A + value;
-            _context.CarryFlag = x > byte.MaxValue;
-            var y = unchecked((sbyte)_context.A) + unchecked((sbyte)value);
-            _context.ParityOverflowFlag = y > sbyte.MaxValue || y < sbyte.MinValue;
-            _context.AddSubtractFlag = false;
-            _context.SignFlag = (x & 0x80) != 0;
+            var result = _context.A - value;
+            _context.SignFlag = (result & 0x80) != 0;
+            _context.ZeroFlag = result == 0;
+            // Todo: _context.HalfCarryFlag
+            _context.AddSubtractFlag = true;
+            _context.CarryFlag = _context.A < value;
+            // Todo: not 100% about this, verify
+            _context.ParityOverflowFlag = _context.CarryFlag ^ ((result & 0x100) != 0);
+
+            return (byte)result;
+        }
+
+        private byte Dec8(byte value)
+        {
+            var result = value -= 1;
+            _context.SignFlag = (result & 0x80) != 0;
+            _context.ZeroFlag = result == 0;
+            // Todo: _context.HalfCarryFlag
+            _context.ParityOverflowFlag = value == 0x80;
+            _context.AddSubtractFlag = true;
+
+            return result;
         }
 
         private bool IsParityEven(byte value)
