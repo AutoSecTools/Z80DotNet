@@ -107,9 +107,52 @@ namespace Components.Z80
                 OperandType == OperandType.Word ? string.Format(" 0x{0:x4}", Immediate) :
                 "";
 
+            string opcodeStr;
+
+            switch (Opcode)
+            {
+                case Z80Opcode.PrefixCB:
+                    opcodeStr = OpcodeCB.ToString();
+                    break;
+
+                case Z80Opcode.PrefixDD:
+                    switch (OpcodeDD)
+                    {
+                        case Z80OpcodeDD.PrefixDDCB:
+                            opcodeStr = OpcodeDDCB.ToString();
+                            break;
+
+                        default:
+                            opcodeStr = OpcodeDD.ToString();
+                            break;
+                    }
+                    break;
+
+                case Z80Opcode.PrefixED:
+                    opcodeStr = OpcodeED.ToString();
+                    break;
+
+                case Z80Opcode.PrefixFD:
+                    switch (OpcodeFD)
+                    {
+                        case Z80OpcodeFD.PrefixFDCB:
+                            opcodeStr = OpcodeFDCB.ToString();
+                            break;
+
+                        default:
+                            opcodeStr = OpcodeFD.ToString();
+                            break;
+                    }
+                    break;
+
+                default:
+                    opcodeStr = Opcode.ToString();
+                    break;
+            }
+
             return string.Format(
                 "{0}{1}",
-                Opcode != Z80Opcode.PrefixED ? Opcode.ToString() : OpcodeED.ToString(),
+                opcodeStr,
                 operand);
         }
 

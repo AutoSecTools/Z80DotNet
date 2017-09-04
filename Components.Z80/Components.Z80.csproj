@@ -43,8 +43,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SymbolFileReader.cs" />
     <Compile Include="Z80AssemblyFormatter.cs" />
+    <Compile Include="Z80Context.cs" />
+    <Compile Include="Z80Decoder.cs" />
     <Compile Include="Z80Disassembler.cs" />
+    <Compile Include="Z80Emulator.cs" />
     <Compile Include="Z80Instruction.cs" />
+    <Compile Include="Z80InteruptMode.cs" />
     <Compile Include="Z80Opcode.cs" />
     <Compile Include="Z80OpcodeCB.cs" />
     <Compile Include="Z80OpcodeDD.cs" />

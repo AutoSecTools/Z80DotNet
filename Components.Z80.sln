@@ -7,6 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Z80Dasm", "Z80Dasm\Z80Dasm.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Z80Binaries", "Z80Binaries", "{BDF3F30F-367E-46A2-8F19-F9AFC763C547}"
 	ProjectSection(SolutionItems) = preProject
+		Z80Binaries\model3.asm = Z80Binaries\model3.asm
 		Z80Binaries\model3.rom = Z80Binaries\model3.rom
 		Z80Binaries\model3.symbols = Z80Binaries\model3.symbols
 	EndProjectSection
