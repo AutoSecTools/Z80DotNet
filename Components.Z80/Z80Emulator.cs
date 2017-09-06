@@ -30,6 +30,12 @@ namespace Components.Z80
 
         private byte[] _lastKbValue = null;
 
+        private LimitedQueue<Z80Frame> _pcTrace = new LimitedQueue<Z80Frame>(0x100);
+
+        private LimitedQueue<Z80Frame> _blockTrace = new LimitedQueue<Z80Frame>(0x10);
+
+        private Stack<Z80Frame> _callStack = new Stack<Z80Frame>();
+
         public Z80Emulator(byte[] memory, Dictionary<ushort, string> symbols)
         {
             _memory = memory;
@@ -80,12 +86,19 @@ namespace Components.Z80
         private void ExecuteInstruction()
         {
             _instructionAddress = _context.PC;
+            
+            _pcTrace.Enqueue(
+                new Z80Frame(
+                    GetName(_instructionAddress),
+                    _instructionAddress,
+                    0));
+
             _instruction = _decoder.Decode();
             _context.PC = (ushort)_stream.Position;
 
-            string symbol;
+            var symbol = GetName(_instructionAddress);
 
-            if (_symbols.TryGetValue(_instructionAddress, out symbol))
+            if (symbol != null)
             {
                 Cli.WriteLine("~|Yellow~~Black~{0}~R~", symbol);
             }
@@ -443,48 +456,48 @@ namespace Components.Z80
                 case Z80Opcode.CP_Ptr_HL: Sub8(_memory[_context.HL]); break;
 
                 // JP
-                case Z80Opcode.JP_NN: SetPC(_instruction.Immediate); break;
+                case Z80Opcode.JP_NN: JumpAbsolute(); break;
                 case Z80Opcode.JP_Ptr_HL: SetPC(_context.HL); break;
 
                 case Z80Opcode.JP_Z_NN:
                     if (_context.ZeroFlag)
                     {
-                        SetPC(_instruction.Immediate);
+                        JumpAbsolute();
                     }
                     break;
 
                 case Z80Opcode.JP_NZ_NN:
                     if (!_context.ZeroFlag)
                     {
-                        SetPC(_instruction.Immediate);
+                        JumpAbsolute();
                     }
                     break;
 
                 case Z80Opcode.JP_C_NN:
                     if (_context.CarryFlag)
                     {
-                        SetPC(_instruction.Immediate);
+                        JumpAbsolute();
                     }
                     break;
 
                 case Z80Opcode.JP_NC_NN:
                     if (!_context.CarryFlag)
                     {
-                        SetPC(_instruction.Immediate);
+                        JumpAbsolute();
                     }
                     break;
 
                 case Z80Opcode.JP_P_NN:
                     if (!_context.SignFlag)
                     {
-                        SetPC(_instruction.Immediate);
+                        JumpAbsolute();
                     }
                     break;
 
                 case Z80Opcode.JP_M_NN:
                     if (_context.SignFlag)
                     {
-                        SetPC(_instruction.Immediate);
+                        JumpAbsolute();
                     }
                     break;
 
@@ -564,34 +577,34 @@ namespace Components.Z80
 
                 // RET
                 case Z80Opcode.RET:
-                    SetPC(Pop16());
+                    Return();
                     break;
 
                 case Z80Opcode.RET_Z:
                     if (_context.ZeroFlag)
                     {
-                        SetPC(Pop16());
+                        Return();
                     }
                     break;
 
                 case Z80Opcode.RET_NZ:
                     if (!_context.ZeroFlag)
                     {
-                        SetPC(Pop16());
+                        Return();
                     }
                     break;
 
                 case Z80Opcode.RET_C:
                     if (_context.CarryFlag)
                     {
-                        SetPC(Pop16());
+                        Return();
                     }
                     break;
 
                 case Z80Opcode.RET_NC:
                     if (!_context.CarryFlag)
                     {
-                        SetPC(Pop16());
+                        Return();
                     }
                     break;
 
@@ -952,12 +965,24 @@ namespace Components.Z80
 
         private void Call(ushort address)
         {
+            _callStack.Push(new Z80Frame(GetName(address), address, _context.PC));
             Push16(_context.PC);
             SetPC(address);
         }
 
+        private void Return()
+        {
+            if (_callStack.Any())
+            {
+                _callStack.Pop();
+            }
+
+            SetPC(Pop16());
+        }
+
         private void SetPC(ushort address)
         {
+            _blockTrace.Enqueue(new Z80Frame(GetName(address), address, 0));
             _context.PC = address;
             _reader.BaseStream.Position = address;
         }
@@ -992,6 +1017,11 @@ namespace Components.Z80
             return (ushort)
                 (_memory[_context.SP++] |
                 (_memory[_context.SP++] << 0x8));
+        }
+
+        private void JumpAbsolute()
+        {
+            SetPC(_instruction.Immediate);
         }
 
         private void JumpRelative()
@@ -1116,6 +1146,14 @@ namespace Components.Z80
             _context.ParityOverflowFlag = _context.CarryFlag ^ ((result & 0x10000) != 0);
             _context.HL = (ushort)result;
             
+        }
+
+        private string GetName(ushort address)
+        {
+            string symbol;
+            _symbols.TryGetValue(_instructionAddress, out symbol);
+
+            return symbol;
         }
 
         public void Dispose()

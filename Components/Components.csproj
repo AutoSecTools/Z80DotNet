@@ -53,6 +53,7 @@
     <Compile Include="ConsolePlus\DumpMode.cs" />
     <Compile Include="ConsolePlus\InteractiveConsole.cs" />
     <Compile Include="IEnumerableExtension.cs" />
+    <Compile Include="LimitedQueue.cs" />
     <Compile Include="PathHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringExtension.cs" />

@@ -42,6 +42,7 @@
     <Compile Include="IODevice.cs" />
     <Compile Include="OperandType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Z80Frame.cs" />
     <Compile Include="SymbolFileReader.cs" />
     <Compile Include="Trs80Mode3IODevice.cs" />
     <Compile Include="Z80AssemblyFormatter.cs" />
