@@ -1156,6 +1156,11 @@ namespace Components.Z80
             return symbol;
         }
 
+        private void DumpVideoBuffer()
+        {
+            File.WriteAllBytes(@"c:\temp\video.bin", _memory.Skip(0x3C00).Take(1024).ToArray());
+        }
+
         public void Dispose()
         {
             throw new NotImplementedException();
