@@ -54,10 +54,11 @@ namespace Components.Z80
             var keyAddr = 0x3840;
             byte keyBit = 0x1;
             var keyBufferInitialized = false;
+            var keyBufferChanges = 0;
 
             while (true)
             {
-                if (rnd.Next(0, 5) == 0)
+                if (keyBufferChanges < 8 && rnd.Next(0, 5) == 0)
                 {
                     _memory[keyAddr] = keyBit;
                 }
@@ -71,6 +72,11 @@ namespace Components.Z80
 
                 if (keyBufferInitialized && !kbBuffer.SequenceEqual(_lastKbValue))
                 {
+                    if (kbBuffer[6] == 0x1)
+                    {
+                        keyBufferChanges++;
+                    }
+
                     _lastKbValue = kbBuffer;
                 }
                 else if (kbBuffer[6] == 0xaa && kbBuffer[0] == 0x0)
@@ -249,6 +255,9 @@ namespace Components.Z80
                 case Z80Opcode.LD_C_Ptr_HL: _context.C = _memory[_context.HL]; break;
                 case Z80Opcode.LD_D_Ptr_HL: _context.D = _memory[_context.HL]; break;
                 case Z80Opcode.LD_E_Ptr_HL: _context.E = _memory[_context.HL]; break;
+                case Z80Opcode.LD_H_Ptr_HL: _context.H = _memory[_context.HL]; break;
+                case Z80Opcode.LD_L_Ptr_HL: _context.L = _memory[_context.HL]; break;
+
                 case Z80Opcode.LD_A_Ptr_NN: _context.A = _memory[_instruction.Immediate]; break;
 
                 case Z80Opcode.LD_Ptr_HL_A: _memory[_context.HL] = _context.A; break;
@@ -259,6 +268,9 @@ namespace Components.Z80
                 case Z80Opcode.LD_Ptr_HL_H: _memory[_context.HL] = _context.H; break;
                 case Z80Opcode.LD_Ptr_HL_L: _memory[_context.HL] = _context.L; break;
                 case Z80Opcode.LD_Ptr_HL_N: _memory[_context.HL] = (byte)_instruction.Immediate; break;
+
+                case Z80Opcode.LD_Ptr_BC_A: _memory[_context.BC] = _context.A; break;
+                case Z80Opcode.LD_Ptr_DE_A: _memory[_context.DE] = _context.A; break;
 
                 case Z80Opcode.LD_Ptr_NN_A: _memory[_instruction.Immediate] = _context.A; break;
 
@@ -291,6 +303,12 @@ namespace Components.Z80
                 case Z80Opcode.DEC_DE: _context.DE--; break;
                 case Z80Opcode.DEC_HL: _context.HL--; break;
 
+                case Z80Opcode.ADD_HL_BC:
+                    // Todo: H flag if carry from bit 11
+                    _context.HL += _context.BC;
+                    _context.AddSubtractFlag = false;
+                    break;
+
                 // ADD
                 case Z80Opcode.ADD_HL_DE:
                     // Todo: H flag if carry from bit 11
@@ -298,9 +316,15 @@ namespace Components.Z80
                     _context.AddSubtractFlag = false;
                     break;
 
-                case Z80Opcode.ADD_HL_BC:
+                case Z80Opcode.ADD_HL_HL:
                     // Todo: H flag if carry from bit 11
-                    _context.HL += _context.BC;
+                    _context.HL += _context.HL;
+                    _context.AddSubtractFlag = false;
+                    break;
+
+                case Z80Opcode.ADD_HL_SP:
+                    // Todo: H flag if carry from bit 11
+                    _context.HL += _context.SP;
                     _context.AddSubtractFlag = false;
                     break;
 
@@ -313,6 +337,14 @@ namespace Components.Z80
                 case Z80Opcode.SUB_H: _context.A = Sub8(_context.H); break;
                 case Z80Opcode.SUB_L: _context.A = Sub8(_context.L); break;
                 case Z80Opcode.SUB_N: _context.A = Sub8((byte)_instruction.Immediate); break;
+
+                case Z80Opcode.SBC_A: SubWithCarry8(_context.A); break;
+                case Z80Opcode.SBC_B: SubWithCarry8(_context.B); break;
+                case Z80Opcode.SBC_C: SubWithCarry8(_context.C); break;
+                case Z80Opcode.SBC_D: SubWithCarry8(_context.D); break;
+                case Z80Opcode.SBC_E: SubWithCarry8(_context.E); break;
+                case Z80Opcode.SBC_H: SubWithCarry8(_context.H); break;
+                case Z80Opcode.SBC_L: SubWithCarry8(_context.L); break;
 
                 // AND 
                 case Z80Opcode.AND_A:
@@ -398,6 +430,11 @@ namespace Components.Z80
 
                 case Z80Opcode.OR_N:
                     _context.A |= (byte)_instruction.Immediate;
+                    SetLogicalOperationFlags();
+                    break;
+
+                case Z80Opcode.OR_Ptr_HL:
+                    _context.A |= _memory[_context.HL];
                     SetLogicalOperationFlags();
                     break;
 
@@ -570,6 +607,20 @@ namespace Components.Z80
 
                 case Z80Opcode.CALL_M_NN:
                     if (_context.SignFlag)
+                    {
+                        Call(_instruction.Immediate);
+                    }
+                    break;
+
+                case Z80Opcode.CALL_C_NN:
+                    if (_context.CarryFlag)
+                    {
+                        Call(_instruction.Immediate);
+                    }
+                    break;
+
+                case Z80Opcode.CALL_NC_NN:
+                    if (!_context.CarryFlag)
                     {
                         Call(_instruction.Immediate);
                     }
@@ -1129,6 +1180,24 @@ namespace Components.Z80
             return value;
         }
 
+        private void SubWithCarry8(byte value)
+        {
+            if (_context.CarryFlag)
+            {
+                value++;
+            }
+
+            var result = _context.A - value;
+            _context.SignFlag = (result & 0x80) != 0x0;
+            _context.ZeroFlag = result == 0x0;
+            _context.CarryFlag = value > _context.A;
+            _context.AddSubtractFlag = true;
+            // Todo: set _context.HalfCarryFlag
+            // Todo: validate
+            _context.ParityOverflowFlag = _context.CarryFlag ^ ((result & 0x100) != 0);
+            _context.A = (byte)result;
+        }
+
         private void SubWithCarry16(ushort value)
         {
             if (_context.CarryFlag)
@@ -1145,7 +1214,6 @@ namespace Components.Z80
             // Todo: validate
             _context.ParityOverflowFlag = _context.CarryFlag ^ ((result & 0x10000) != 0);
             _context.HL = (ushort)result;
-            
         }
 
         private string GetName(ushort address)
