@@ -484,7 +484,7 @@ namespace Components.Z80
                 case Z80Opcode.JP_M_NN:
                     if (_context.SignFlag)
                     {
-                        Call(_instruction.Immediate);
+                        SetPC(_instruction.Immediate);
                     }
                     break;
 
